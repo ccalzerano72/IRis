@@ -159,6 +159,20 @@ python script/hybrid_controlnet_restoration/run.py \
 
 ## Training
 
+### Setup
+
+|                   |                                                                                                  |
+| ----------------- | ------------------------------------------------------------------------------------------------ |
+| **Dataset**       | LAION-Aesthetics subset, ~20,000 images                                                          |
+| **Crop size**     | 768 × 768 (random crops)                                                                         |
+| **Degradation**   | RealESRGAN second-order pipeline: blur → resize → noise → JPEG (two cascaded stages, on-the-fly) |
+| **Iterations**    | 15,000                                                                                           |
+| **Batch size**    | 16                                                                                               |
+| **Hardware**      | NVIDIA L40S (single GPU)                                                                         |
+| **Training time** | ~20 hours                                                                                        |
+
+### Running
+
 To train from scratch:
 
 ```bash
