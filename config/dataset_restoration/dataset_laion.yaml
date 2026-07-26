@@ -1,0 +1,11 @@
+# LAION Dataset Configuration
+# Dataset-specific settings for LAION
+
+dataset_name: laion
+dataset_root: laion
+
+# LAION has all images in one folder - auto split
+split_config:
+  mode: auto
+  train_ratio: 0.8 # 80% train, 20% val
+  random_seed: 42 # For reproducibility

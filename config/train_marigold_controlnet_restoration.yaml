@@ -1,0 +1,107 @@
+base_config:
+- config/logging.yaml
+- config/wandb.yaml
+- config/dataset_restoration/dataset_train.yaml
+- config/dataset_restoration/dataset_val.yaml
+- config/dataset_restoration/dataset_vis.yaml
+- config/model_sdv2.yaml
+
+wandb:
+  project: marigold-controlnet-restoration
+  name: test-01
+
+# Override model path to use HuggingFace directly
+model:
+  pretrained_path: stabilityai/stable-diffusion-2
+
+pipeline:
+  name: MarigoldControlNetRestorationPipeline
+  kwargs:
+    default_denoising_steps: 4
+    default_processing_resolution: 768
+
+augmentation:
+  lr_flip_p: 0.5
+
+dataloader:
+  num_workers: 8
+  effective_batch_size: 16
+  max_train_batch_size: 16
+  seed: 2024
+
+trainer:
+  name: MarigoldControlNetRestorationTrainer
+  init_seed: 2024
+  save_period: 5000
+  backup_period: 200000
+  validation_period: 250
+  visualization_period: 100
+  gradient_checkpointing: true
+  save_trainer_state: false
+  checkpoint_strategy:
+    mode: decoupled
+
+# Task-specific data keys for restoration
+degraded_rgb_type: degraded_rgb_norm
+clean_rgb_type: clean_rgb_norm
+
+max_epoch: 10000
+max_iter: 30000
+
+loss:
+  name: mse_loss
+  kwargs:
+    reduction: mean
+
+lr: 1.0e-04
+lr_scheduler:
+  name: IterExponential
+  kwargs:
+    total_iter: 25000
+    final_ratio: 0.01
+    warmup_steps: 100
+
+# Offset noise for preventing latent drift
+offset_noise:
+  strength: 0.0 # 0.1
+
+# Input noise augmentation (pixel space for ControlNet conditioning)
+input_noise_augmentation:
+  probability: 0.0 # 0.3
+  max_strength: 0.05
+
+# Validation settings
+validation:
+  denoising_steps: 10
+  ensemble_size: 1
+  processing_res: 0
+  match_input_res: false
+  resample_method: bilinear
+  main_val_metric: psnr
+  main_val_metric_goal: maximize
+  init_seed: 2024
+  max_images_to_log: 16
+  log_images_during_validation: true
+  batch_size: 1
+  num_workers: 8
+  pin_memory: true
+  persistent_workers: true
+
+eval:
+  eval_metrics:
+  - psnr
+  - ssim
+  - lpips_alex
+
+degradation_config_disabled:
+  mode: online
+  base_seed: 42
+  types:
+    - whitenoise
+    # - jpeg
+    # - gaublur
+  levels: [3]
+  mixed_prob: 0.0  # Never mix degradations — each sample gets exactly one type
+  # Pipeline and SR configs not used but kept for schema compatibility
+  pipeline_config: {}
+  sr_config: {}

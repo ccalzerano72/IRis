@@ -1,0 +1,118 @@
+# Base configuration for restoration dataset
+# This inherits from a specific dataset config (div2k, kadis700k, etc.)
+# and adds degradation and preprocessing settings
+
+# CHANGE THIS LINE to switch dataset:
+base_config:
+# - config/dataset_restoration/dataset_div2k.yaml
+# - config/dataset_restoration/dataset_kadis700k.yaml  # Uncomment to use Kadis700k
+  - config/dataset_restoration/dataset_laion.yaml  # Uncomment to use LAION
+
+# Degradation settings (independent of dataset)
+# Mode: pre_generated | online | pipeline | sr | diffbir_codeformer | diffbir_realesrgan
+# - pre_generated: Load pre-generated degraded images from disk (NO online resize)
+# - online: Generate degradations on-the-fly using ARNIQA (WITH online resize)
+# - pipeline: Sequential probabilistic pipeline (blur -> noise -> compression)
+# - sr: Super-resolution degradation (downscale-upscale)
+# - diffbir_codeformer: DiffBIR single-stage (blur -> downsample -> noise -> JPEG)
+# - diffbir_realesrgan: DiffBIR two-stage RealESRGAN degradation (PyTorch)
+
+# ============================================================================
+# ACTIVE DEGRADATION CONFIG - Change this to switch modes
+# ============================================================================
+degradation_config:
+  mode: diffbir_realesrgan
+  base_seed: 42
+  
+  # SR MODE CONFIG
+  sr_config:
+    scale_factor: [2.0, 4.0]  # [min, max] - uniform random sampling
+    downscale_mode: random    # random | area | bicubic
+    upscale_mode: random      # random | bilinear | bicubic
+
+  # ONLINE MODE CONFIG (used when mode: online)
+  types:
+    - gaublur
+  levels: [0, 1, 2, 3, 4]
+  mixed_prob: 0.0
+  
+  # PIPELINE MODE CONFIG (used when mode: pipeline)
+  pipeline_config:
+    blur:
+      probability: 0.5
+      types:
+        gaussian:
+          weight: 0.7
+          levels: [0, 1, 2, 3, 4]
+        motion:
+          weight: 0.3
+          levels: [0, 1, 2, 3, 4]
+    noise:
+      probability: 0.5
+      types:
+        gaussian:
+          weight: 0.8
+          levels: [0, 1, 2, 3, 4]
+        multiplicative:
+          weight: 0.2
+          levels: [0, 1, 2, 3, 4]
+    compression:
+      probability: 0.5
+      levels: [0, 1, 2, 3, 4]
+
+  # DIFFBIR CODEFORMER MODE CONFIG (used when mode: diffbir_codeformer)
+  # Single-stage numpy pipeline: blur -> downsample -> noise -> JPEG -> resize back
+  # Defaults from: DiffBIR configs/train/train_stage1.yaml
+  diffbir_codeformer_config:
+    blur_kernel_size: 41
+    kernel_list: ['iso', 'aniso']
+    kernel_prob: [0.5, 0.5]
+    blur_sigma: [0.1, 12]
+    downsample_range: [1, 12]
+    noise_range: [0, 15]
+    jpeg_range: [30, 100]
+
+  # DIFFBIR REALESRGAN MODE CONFIG (used when mode: diffbir_realesrgan)
+  # Two-stage PyTorch pipeline matching DiffBIR v2.1 training
+  # Defaults from: DiffBIR configs/train/train_stage2_v2.1.yaml
+  diffbir_realesrgan_config:
+    stage2_scale: 1.0  # 1.0 = same-resolution restoration, 4.0 = super-resolution
+    # Stage 1 kernel params
+    kernel_list: ['iso', 'aniso', 'generalized_iso', 'generalized_aniso', 'plateau_iso', 'plateau_aniso']
+    kernel_prob: [0.45, 0.25, 0.12, 0.03, 0.12, 0.03]
+    blur_sigma: [0.2, 3]
+    betag_range: [0.5, 4]
+    betap_range: [1, 2]
+    sinc_prob: 0.1
+    # Stage 2 kernel params
+    kernel_list2: ['iso', 'aniso', 'generalized_iso', 'generalized_aniso', 'plateau_iso', 'plateau_aniso']
+    kernel_prob2: [0.45, 0.25, 0.12, 0.03, 0.12, 0.03]
+    blur_sigma2: [0.2, 1.5]
+    betag_range2: [0.5, 4]
+    betap_range2: [1, 2]
+    sinc_prob2: 0.1
+    final_sinc_prob: 0.8
+    # Stage 1 degradation params
+    resize_prob: [0.2, 0.7, 0.1]      # [up, down, keep]
+    resize_range: [0.15, 1.5]
+    gaussian_noise_prob: 0.5
+    noise_range: [1, 30]
+    poisson_scale_range: [0.05, 3]
+    gray_noise_prob: 0.4
+    jpeg_range: [30, 95]
+    # Stage 2 degradation params
+    second_blur_prob: 0.8
+    resize_prob2: [0.3, 0.4, 0.3]     # [up, down, keep]
+    resize_range2: [0.3, 1.2]
+    gaussian_noise_prob2: 0.5
+    noise_range2: [1, 25]
+    poisson_scale_range2: [0.05, 2.5]
+    gray_noise_prob2: 0.4
+    jpeg_range2: [30, 95]
+
+# Image preprocessing
+# - mode=pre_generated: This is IGNORED (images already resized offline)
+# - mode=online/pipeline/sr: This is APPLIED during training (online resize)
+resize_to_hw:
+  - 768
+  - 768

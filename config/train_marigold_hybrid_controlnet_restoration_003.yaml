@@ -1,0 +1,166 @@
+# --------------------------------------------------------------------------
+# Hybrid-003: Joint UNet + ControlNet Training with ARNIQA Conditioning
+#
+# Architecture:
+#   - 8ch UNet (SD2 weights, expanded 4→8ch, TRAINABLE)
+#   - ControlNet (from SD2 UNet, TRAINABLE)
+#   - ARNIQA Stage 2 conditioning (frozen encoder + trainable adapters)
+#   - Degraded latent concatenation (channels 0:4) + noisy latent (channels 4:8)
+#   - ControlNet receives degraded RGB in pixel space
+#
+# Key differences from hybrid-002:
+#   - UNet is TRAINABLE (not frozen) with low LR
+#   - No base_checkpoint_path — starts from SD2 original weights
+#   - ARNIQA Stage 2 quality-aware conditioning replaces empty text embedding
+#   - 3-way differential LR: UNet (1e-5) + ControlNet (5e-4) + ARNIQA adapters (2e-4)
+# --------------------------------------------------------------------------
+
+base_config:
+  - config/logging.yaml
+  - config/wandb.yaml
+  - config/dataset_restoration/dataset_train.yaml
+  - config/dataset_restoration/dataset_val.yaml
+  - config/dataset_restoration/dataset_vis.yaml
+  - config/model_sdv2.yaml
+
+wandb:
+  project: RealESGRAN_DiffBIR_Test
+  name: re_008_linear_sched
+# Override model path to use HuggingFace directly
+model:
+  pretrained_path: stabilityai/stable-diffusion-2
+
+pipeline:
+  name: MarigoldHybridControlNetArniqa003Pipeline
+  kwargs:
+    default_denoising_steps: 4
+    default_processing_resolution: 768
+
+augmentation:
+  lr_flip_p: 0.5
+
+dataloader:
+  num_workers: 8
+  effective_batch_size: 32
+  max_train_batch_size: 16
+  seed: 2024
+
+trainer:
+  name: MarigoldHybridControlNetArniqa003Trainer
+  init_seed: 2024
+  save_period: 5000
+  backup_period: 200000
+  validation_period: 250
+  visualization_period: 100
+  gradient_checkpointing: true
+  save_trainer_state: false
+  checkpoint_strategy:
+    mode: decoupled
+  pixel_loss_crop_size: 128 # Crop size in pixels for optional LPIPS loss
+
+# Task-specific data keys for restoration
+degraded_rgb_type: degraded_rgb_norm
+clean_rgb_type: clean_rgb_norm
+
+max_epoch: 10000
+max_iter: 30000
+
+loss:
+  name: mse_loss
+  kwargs:
+    reduction: mean
+    lpips_weight: 0.25            # LPIPS perceptual loss (scaled by timestep schedule)
+    dino_weight: 0               # DINO perceptual loss
+    dino_model_size: 'B'         # ViT-Base (86M params), 'S' for less VRAM
+    dino_version: 'v3'           # v2 (stable); v3 requires transformers>=4.48+
+    dino_target_size: 256        # Resize before feature extraction
+    pixel_loss_weight: 0.2 # Set > 0 to enable pixel-space L1/L2 on same crop as LPIPS
+    pixel_loss_type: l1 # l1 or l2
+    pixel_loss_max_timestep: 500 # Disable pixel-space losses (LPIPS + DINO) above this timestep
+    pixel_loss_max_value: 0.1 # Cap individual pixel losses to prevent gradient spikes
+    pixel_loss_timestep_schedule: linear # "step" = binary on/off at threshold; "linear" = ramp from 0 at threshold to full at t=0
+
+# --------------------------------------------------------------------------
+# Differential Learning Rates
+# --------------------------------------------------------------------------
+# UNet: low LR to fine-tune from SD2 weights without catastrophic forgetting
+# ControlNet: higher LR for faster adaptation
+# ARNIQA adapters: separate LR (configured in arniqa section below)
+lr: 1.0e-04 # UNet learning rate
+controlnet_lr: 2.0e-04 # ControlNet learning rate
+
+lr_scheduler:
+  name: IterExponential
+  kwargs:
+    total_iter: 25000
+    final_ratio: 0.01
+    warmup_steps: 200
+
+# Initialize ControlNet zero convolutions with small random weights instead of exact zero.
+# Set to 0.0 or remove to keep default exact-zero initialization.
+controlnet_zero_conv_init_scale: 0 # 1.0e-03
+
+# --------------------------------------------------------------------------
+# ARNIQA Quality-Aware Conditioning
+# --------------------------------------------------------------------------
+# When enabled, replaces empty text embeddings with quality features from degraded image.
+# Stage 2: Global (1 token from Layer 4) + Spatial (spatial_size² tokens from Layer 3)
+# Set enabled: false to use empty text embedding instead.
+arniqa:
+  enabled: false
+  stage: 1
+  conditioning_dropout: 0.0
+  adapter_lr: 1.0e-04 # Learning rate for global adapter
+  spatial_adapter_lr: 1.0e-04 # Learning rate for spatial adapter (Stage 2 only)
+  spatial_size: 24 # Spatial grid size (24×24 = 576 tokens)
+  num_tokens: 4 # Number of global tokens (Stage 1 only, ignored in Stage 2)
+
+# --------------------------------------------------------------------------
+# Offset noise for preventing latent drift
+# --------------------------------------------------------------------------
+# Set strength to 0.0 to disable.
+offset_noise:
+  strength: 0.1
+
+# --------------------------------------------------------------------------
+# Input noise augmentation (pixel space for ControlNet conditioning)
+# --------------------------------------------------------------------------
+# Set probability to 0.0 to disable.
+input_noise_augmentation:
+  probability: 0.3
+  max_strength: 0.05
+
+# --------------------------------------------------------------------------
+# CFG (Classifier-Free Guidance) dropout during training
+# --------------------------------------------------------------------------
+# Probability of dropping conditioning (zeroing ControlNet residuals + using empty text embed)
+# to enable CFG at inference time. Set to 0.0 to disable.
+cfg_dropout:
+  probability: 0.0
+
+# --------------------------------------------------------------------------
+# Validation settings
+# --------------------------------------------------------------------------
+validation:
+  denoising_steps: 4
+  ensemble_size: 1
+  processing_res: 0
+  match_input_res: false
+  resample_method: bilinear
+  main_val_metric: psnr
+  main_val_metric_goal: maximize
+  init_seed: 2024
+  max_images_to_log: 16
+  log_images_during_validation: true
+  batch_size: 1
+  num_workers: 0
+  pin_memory: false
+  persistent_workers: false
+
+eval:
+  eval_metrics:
+    - psnr
+    - ssim
+    - lpips_alex
+    - delta_e
+    - arniqa_score

@@ -1,0 +1,183 @@
+base_config:
+- config/logging.yaml
+- config/wandb.yaml
+- config/dataset_restoration/dataset_train.yaml
+- config/dataset_restoration/dataset_val.yaml
+- config/dataset_restoration/dataset_vis.yaml
+- config/model_sdv2.yaml
+
+wandb:
+  project: marigold-002-restoration
+
+# Override model path to use HuggingFace directly (no local checkpoints needed)
+model:
+  pretrained_path: stabilityai/stable-diffusion-2
+
+pipeline:
+  name: MarigoldRestorationPipeline
+  kwargs:
+    default_denoising_steps: 4
+    default_processing_resolution: 768
+
+augmentation:
+  lr_flip_p: 0.5
+  
+dataloader:
+  num_workers: 8
+  effective_batch_size: 32
+  max_train_batch_size: 16
+  seed: 2024  # to ensure continuity when resuming from checkpoint
+
+trainer:
+  name: MarigoldRestorationTrainer
+  training_noise_scheduler:
+    pretrained_path: stable-diffusion-2
+  init_seed: 2024  # use null to train w/o seeding
+  save_period: 50
+  backup_period: 2000
+  validation_period: 500
+  visualization_period: 1000
+
+  # Gradient checkpointing for U-Net (saves VRAM at ~20-30% speed cost)
+  # Recomputes intermediate activations during backward pass instead of storing them
+  gradient_checkpointing: true
+
+  # Pixel-space loss crop size (in pixels)
+  # VAE decodes only a random crop of the predicted latent for pixel-space losses (LPIPS)
+  # This saves massive VRAM compared to decoding the full image
+  # Crop position is seeded from the per-iteration RNG for reproducibility
+  # 128 → 16×16 latent crop, 256 → 32×32 latent crop
+  pixel_loss_crop_size: 128
+
+  # Latent normalization (zero mean + unit variance)
+  # Normalizes clean_latent and degraded_latent BEFORE noise addition
+  # This makes the velocity target naturally zero-mean and unit variance
+  # In inference: normalize conditioning once, normalize noisy latent for UNet input only,
+  # restore degraded_mean and scale back variance to final latent before decode for photometric consistency
+  normalize_latents: false
+
+  checkpoint_strategy:
+    # Mode: "marigold" (default) or "decoupled"
+    # - marigold: Original Marigold pattern (save before+after validation, save best during validation)
+    # - decoupled: Independent save/val/vis (save only at save_period, validation doesn't save)
+    mode: marigold
+  
+  # Save trainer state (optimizer, lr_scheduler, epoch, etc.) in checkpoints
+  # Set to false to save only model weights (inference-only checkpoints, saves ~6.5GB)
+  # Training cannot be resumed from checkpoints saved without trainer state
+  save_trainer_state: true
+
+  # Mixed Precision Training (FP16)
+  # Provides 2-3× speedup and reduces GPU memory usage
+  # Set to false to train in FP32 (slower but potentially more stable)
+  mixed_precision: true
+
+disabled_multi_res_noise:
+  strength: 0.9
+  annealed: true
+  downscale_strategy: original
+
+# Offset noise for preventing latent drift
+# Adds a spatially constant offset to noise during training to help the model
+# handle images with extreme brightness/darkness values (prevents "gray" outputs)
+# Reference: https://www.crosslabs.org/blog/diffusion-with-offset-noise
+# Typical values: 0.05-0.1 (0.0 = disabled)
+offset_noise:
+  strength: 0.1  # Set to 0.05-0.1 to enable
+
+# Input noise augmentation for conditioning robustness
+# Adds small random noise to the degraded latent (conditioning) during training
+# Applied to a percentage of samples with variable strength [0, max_strength]
+# This can help prevent overfitting to exact conditioning values
+input_noise_augmentation:
+  probability: 0.3    # Percentage of samples to augment (0.0 = disabled, e.g., 0.2 = 20%)
+  max_strength: 0.05  # Maximum noise strength (actual strength is uniform [0, max_strength])
+
+# Task-specific data keys for restoration
+degraded_rgb_type: degraded_rgb_norm
+clean_rgb_type: clean_rgb_norm
+
+max_epoch: 10000  # a large enough number
+max_iter: 30000  # usually converges at around 20k
+
+optimizer:
+  name: Adam
+
+loss:
+  name: mse_loss
+  kwargs:
+    reduction: mean
+    gradient_weight: 0.0  # Latent gradient loss weight (Sobel-based, 0 to disable)
+    lpips_weight: 0.1     # Pixel-space LPIPS weight (VAE decode on random crop, 0 to disable)
+    dino_weight: 0.0      # Pixel-space DINO perceptual weight (0 to disable, try 0.05-0.2)
+    dino_model_size: B    # DINO model size: S, B, L, H, G (B = ViT-Base, 86M params)
+    dino_version: v3      # DINO version: v2 or v3
+    dino_target_size: 256 # Resize before feature extraction (memory savings)
+
+lr: 3.0e-05
+lr_scheduler:
+  name: IterExponential
+  kwargs:
+    total_iter: 25000
+    final_ratio: 0.01
+    warmup_steps: 100
+
+# Light setting for the in-training validation and visualization
+validation:
+  denoising_steps: 5
+  ensemble_size: 1
+  processing_res: 0
+  match_input_res: false
+  resample_method: bilinear
+  main_val_metric: psnr
+  main_val_metric_goal: maximize
+  init_seed: 2024
+  max_images_to_log: 16  # Number of images to log to W&B
+  log_images_during_validation: true  # Log images during validation (not just visualization)
+  
+  # Validation DataLoader optimization (3-5× speedup)
+  batch_size: 1  # Process multiple images together (was 1)
+  num_workers: 8  # Parallel data loading
+  pin_memory: true  # Faster GPU transfer
+  persistent_workers: true  # Reuse workers across validations
+  
+# Timestep-aware conditioning scaling
+# Scales the degraded image conditioning based on noise level
+# High timesteps (high noise): stronger conditioning for structure guidance
+# Low timesteps (low noise): weaker conditioning to preserve fine details
+conditioning:
+  timestep_scaling: false     # Enable/disable timestep-aware scaling
+  scale_min: 0.1              # Scale at t=0 (low noise)
+  scale_max: 0.9              # Scale at t=max (high noise)
+
+# Classifier-Free Guidance (CFG) training
+# During training, randomly drop conditioning with this probability
+# This allows using guidance_scale > 1.0 during inference
+# Set to 0.0 to disable CFG training (standard conditional training)
+cfg:
+  conditioning_dropout_prob: 0.0  # 10% dropout (standard value)
+
+# ARNIQA Quality-Aware Conditioning
+# When enabled, replaces empty text embeddings with quality features from degraded image
+# This provides the U-Net with explicit information about degradation type and severity
+# Reference: thesis-docs/notes/arniqa-quality-conditioning.md
+#
+# Stage 1: Global-only conditioning (1 token from Layer 4 global features)
+# Stage 2: Global + Spatial conditioning (1 global + spatial_size² spatial tokens)
+#
+# For Stage 2, both adapters are trained jointly from scratch (joint optimization)
+arniqa:
+  enabled: true               # Set to true to enable ARNIQA conditioning
+  stage: 1                    # Conditioning stage: 1=global only, 2=global+spatial
+  conditioning_dropout: 0.0   # Probability of dropping conditioning (for CFG-like robustness)
+  adapter_lr: 2.0e-04         # Learning rate for global adapter (higher than U-Net)
+  spatial_adapter_lr: 2.0e-04 # Learning rate for spatial adapter (Stage 2 only)
+  spatial_size: 24            # Spatial grid size for Stage 2 (24×24 = 576 tokens)
+  num_tokens: 4               # Number of global tokens for Stage 1 only (ignored in Stage 2)
+
+eval:
+  eval_metrics:
+  - psnr
+  - ssim
+  - lpips_alex
+  - arniqa_score

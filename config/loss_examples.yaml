@@ -1,0 +1,140 @@
+# Loss Function Configuration Examples
+# =====================================
+# This file shows different loss combinations you can use.
+# Copy the desired configuration to your training config.
+
+# Example 1: MSE + VGG + LPIPS (Current Test_005)
+# ------------------------------------------------
+# Good for: General restoration with perceptual quality
+# Speed: Medium (VGG forward pass)
+loss_mse_vgg_lpips:
+  name: CombinedRestorationLoss
+  kwargs:
+    mse_weight: 1.0
+    perceptual_weight: 0.1      # VGG perceptual loss
+    ms_ssim_weight: 0.0          # Disabled
+    lpips_weight: 0.05
+    perceptual_layers: ['relu1_2', 'relu2_2', 'relu3_3', 'relu4_3']
+    lpips_net: 'alex'
+
+# Example 2: MSE + MS-SSIM + LPIPS (Recommended)
+# -----------------------------------------------
+# Good for: Best balance of speed and quality
+# Speed: Fast (MS-SSIM is efficient)
+# Benefits: No redundancy, complementary signals
+loss_mse_msssim_lpips:
+  name: CombinedRestorationLoss
+  kwargs:
+    mse_weight: 1.0
+    perceptual_weight: 0.0       # VGG disabled
+    ms_ssim_weight: 0.3          # MS-SSIM enabled
+    lpips_weight: 0.05
+    lpips_net: 'alex'
+
+# Example 3: MSE + VGG + MS-SSIM + LPIPS (Maximum Quality)
+# ---------------------------------------------------------
+# Good for: Best possible quality (if you have GPU memory)
+# Speed: Slower (both VGG and MS-SSIM)
+# Benefits: All signals combined
+loss_all_components:
+  name: CombinedRestorationLoss
+  kwargs:
+    mse_weight: 1.0
+    perceptual_weight: 0.1       # VGG enabled
+    ms_ssim_weight: 0.2          # MS-SSIM enabled (lower weight to avoid over-weighting)
+    lpips_weight: 0.05
+    perceptual_layers: ['relu1_2', 'relu2_2', 'relu3_3', 'relu4_3']
+    lpips_net: 'alex'
+
+# Example 4: MSE + MS-SSIM (Fast, No Neural Networks)
+# ----------------------------------------------------
+# Good for: Fast training, limited GPU memory
+# Speed: Very fast (no neural network losses)
+# Benefits: Efficient, good structural similarity
+loss_mse_msssim:
+  name: CombinedRestorationLoss
+  kwargs:
+    mse_weight: 1.0
+    perceptual_weight: 0.0       # VGG disabled
+    ms_ssim_weight: 0.5          # Higher weight since it's the only perceptual component
+    lpips_weight: 0.0            # LPIPS disabled
+
+# Example 5: MSE + LPIPS (Simple Perceptual)
+# -------------------------------------------
+# Good for: Simple perceptual loss without VGG
+# Speed: Medium (only LPIPS network)
+# Benefits: Direct perceptual optimization
+loss_mse_lpips:
+  name: CombinedRestorationLoss
+  kwargs:
+    mse_weight: 1.0
+    perceptual_weight: 0.0       # VGG disabled
+    ms_ssim_weight: 0.0          # MS-SSIM disabled
+    lpips_weight: 0.1            # Higher weight since it's the only perceptual component
+
+# Example 6: Pure MSE (Baseline)
+# -------------------------------
+# Good for: Baseline comparison
+# Speed: Fastest
+# Benefits: Simple, interpretable
+loss_mse_only:
+  name: CombinedRestorationLoss
+  kwargs:
+    mse_weight: 1.0
+    perceptual_weight: 0.0       # All perceptual losses disabled
+    ms_ssim_weight: 0.0
+    lpips_weight: 0.0
+
+# Example 7: MSE + DINO (Modern Perceptual, No GAN)
+# ---------------------------------------------------
+# Good for: Modern perceptual loss using DINOv2/v3 self-supervised features
+# Speed: Medium (ViT-Base forward pass, ~86M params)
+# Benefits: Trained on 1.7B images, captures semantic structure, no human labels needed
+# Reference: https://na-vae.github.io/dino_perceptual/
+loss_mse_dino:
+  name: CombinedRestorationLoss
+  kwargs:
+    mse_weight: 1.0
+    perceptual_weight: 0.0       # VGG disabled
+    ms_ssim_weight: 0.0
+    lpips_weight: 0.0            # LPIPS disabled
+    dino_weight: 0.1             # DINO perceptual loss
+    dino_model_size: 'B'         # ViT-Base (86M params), 'S' for less VRAM
+    dino_version: 'v3'           # v3 (latest) or v2
+    dino_target_size: 256        # Resize before feature extraction
+
+# Example 8: MSE + LPIPS + DINO (Combined Perceptual)
+# ----------------------------------------------------
+# Good for: A/B comparison of LPIPS vs DINO contribution
+# Speed: Slower (both LPIPS and DINO networks)
+# Benefits: Both losses logged separately to wandb for weight tuning
+loss_mse_lpips_dino:
+  name: CombinedRestorationLoss
+  kwargs:
+    mse_weight: 1.0
+    perceptual_weight: 0.0
+    ms_ssim_weight: 0.0
+    lpips_weight: 0.05
+    dino_weight: 0.05
+    dino_model_size: 'B'
+    dino_version: 'v3'
+    dino_target_size: 256
+
+# Weight Guidelines
+# =================
+# MSE:        1.0   (baseline, range ~0.01-0.1)
+# VGG:        0.1   (scaled down, VGG features are ~10× larger)
+# MS-SSIM:    0.2-0.5 (range 0-1, so needs lower weight than MSE)
+# LPIPS:      0.05-0.1 (range 0-1, already normalized)
+# DINO:       0.05-0.2 (raw magnitude ~1e-4 to 1e-2, start low and tune via wandb)
+#
+# When combining multiple perceptual losses:
+# - Reduce individual weights to avoid over-weighting perceptual quality
+# - Example: VGG 0.1 + MS-SSIM 0.2 + LPIPS 0.05 = 0.35 total perceptual weight
+# - DINO and LPIPS capture overlapping information — using both may not help
+#
+# Adjust based on your priorities:
+# - More pixel accuracy: Increase mse_weight
+# - More perceptual quality: Increase perceptual/ms_ssim/lpips/dino weights
+# - Faster training: Disable VGG and/or LPIPS
+# - Modern perceptual: Use DINO instead of LPIPS (self-supervised, no human labels)

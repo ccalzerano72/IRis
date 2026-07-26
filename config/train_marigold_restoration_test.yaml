@@ -1,0 +1,62 @@
+# Test configuration for 20GB constraint
+# Extends the main restoration config with space-optimized settings
+
+base_config:
+- config/train_marigold_restoration.yaml
+
+trainer:
+  save_period: 5000          
+  backup_period: -1         # Disable backup to save space (was 2000)
+  validation_period:   250  # Keep validation frequent
+  visualization_period: 100 # Keep visualization frequent
+
+  checkpoint_strategy:
+    # Use decoupled mode for fast validation without checkpoint overhead
+    mode: decoupled
+  
+  # Mixed Precision Training (FP16) - enabled by default
+  mixed_precision: true
+  normalize_latents: false
+
+  save_trainer_state: false # save time/space - cannot resume test trainings
+
+max_iter: 35000   
+
+lr: 1.0e-04
+lr_scheduler_disabled:
+  name: CosineAnnealingWarmRestarts
+  kwargs:
+    T_0: 3000           # First cycle: 5000 iterations
+    T_mult: 1.5         # Each cycle doubles in length
+    eta_min_ratio: 0.01 # Minimum LR = 1% of base LR
+    warmup_steps: 300   # Linear warmup for first 100 steps
+    total_iter_length: 25000
+
+loss:
+  name: mse_loss          # l1_loss
+  kwargs:
+    reduction: mean
+    gradient_weight: 0.0  # Latent gradient loss weight (Sobel-based, 0 to disable)
+    lpips_weight: 0.2     # Pixel-space LPIPS weight (VAE decode on random crop, 0 to disable)
+
+arniqa:
+  enabled: false 
+  stage: 2
+
+dataloader:
+  num_workers: 8
+  effective_batch_size: 16 # 192
+  max_train_batch_size: 8  # Batch size for 768x768 resolution
+  seed: 2024  # to ensure continuity when resuming from checkpoint
+
+# Test-specific checkpoint settings
+checkpoint_test:
+  save_unet_only: true           # Save only U-Net (~1.5GB vs ~5.5GB)
+  keep_only_latest_best: true    # Keep only latest + best checkpoints
+  auto_cleanup: true             # Automatic cleanup of old checkpoints
+  max_checkpoints: 2             # Maximum number of checkpoints to keep
+  min_free_space_gb: 5.0         # Alert when free space < 5GB
+
+wandb:
+  project: RealESGRAN_DiffBIR_Test
+  name: re_001_base
