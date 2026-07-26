@@ -1,6 +1,7 @@
 
 # ignore these folders
 /checkpoint
+/checkpoints
 /data
 /input
 /output
