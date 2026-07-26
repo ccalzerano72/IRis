@@ -1,0 +1,11 @@
+# Kadis700k Dataset Configuration
+# Dataset-specific settings for Kadis700k
+
+dataset_name: kadis700k
+dataset_root: kadis700k
+
+# Kadis700k has all images in one folder - auto split
+split_config:
+  mode: auto
+  train_ratio: 0.8 # 80% train, 20% val
+  random_seed: 42 # For reproducibility

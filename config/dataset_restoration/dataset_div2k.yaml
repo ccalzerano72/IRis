@@ -1,0 +1,11 @@
+# DIV2K Dataset Configuration
+# Dataset-specific settings for DIV2K
+
+dataset_name: div2k
+dataset_root: div2k
+
+# DIV2K has pre-split train/val folders
+split_config:
+  mode: presplit
+  train_subfolder: DIV2K_train_HR
+  val_subfolder: DIV2K_valid_HR

@@ -1,0 +1,19 @@
+h5py
+opencv-python
+tensorboard
+wandb
+scikit-learn
+xformers==0.0.28
+
+
+# ARNIQA degradation dependencies
+kornia>=0.7.0
+Pillow>=10.0.0
+
+# Restoration metrics dependencies
+torchmetrics>=0.11.0
+lpips>=0.1.4
+pytorch-msssim>=1.0.0  # Fast MS-SSIM loss (stateless)
+elatentlpips  # E-LatentLPIPS for latent-space perceptual loss
+
+dino-perceptual

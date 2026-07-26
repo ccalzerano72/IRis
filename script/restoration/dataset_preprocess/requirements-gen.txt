@@ -1,0 +1,11 @@
+# Requirements for generate_degraded.py
+# (ARNIQA degradation pipeline)
+
+torch>=2.0.0
+torchvision>=0.15.0
+numpy
+Pillow>=10.0.0
+kornia>=0.7.0
+opencv-python
+scipy
+tqdm

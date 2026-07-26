@@ -1,0 +1,25 @@
+base_config:
+  - config/dataset_restoration/dataset_base.yaml
+
+dataset:
+  train:
+    name: restoration_${dataset_name}
+    disp_name: ${dataset_name}_train
+    dir: ${dataset_root}/train/clean
+    filenames: data_split/restoration/${dataset_name}_train.txt
+    resize_to_hw: ${resize_to_hw}
+
+    degradation_config:
+      mode: ${degradation_config.mode}
+      base_seed: ${degradation_config.base_seed}
+      degraded_dir: ${dataset_root}/train/degraded
+      # Online mode config
+      types: ${degradation_config.types}
+      levels: ${degradation_config.levels}
+      mixed_prob: ${degradation_config.mixed_prob}
+      # Pipeline mode config
+      pipeline_config: ${degradation_config.pipeline_config}
+      # SR mode config
+      sr_config: ${degradation_config.sr_config}
+
+    augmentation_args: ${augmentation}

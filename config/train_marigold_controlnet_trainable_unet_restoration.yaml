@@ -1,0 +1,136 @@
+# --------------------------------------------------------------------------
+# re_004: 4ch Trainable UNet + ControlNet (Ablation Experiment)
+#
+# Architecture:
+#   - Standard 4ch UNet (SD2 weights, TRAINABLE) — NO 8ch expansion
+#   - ControlNet (from SD2 UNet, TRAINABLE)
+#   - UNet receives only noisy_latents (4ch) — NO degraded latent concatenation
+#   - ControlNet receives degraded RGB in pixel space (3ch)
+#
+# Purpose: Isolate the contribution of ControlNet pixel-space conditioning
+# WITHOUT the 8-channel latent concatenation used in hybrid architectures.
+# See thesis-docs/notes/re-004-controlnet-trainable-unet-rationale.md
+#
+# All hyperparameters match hybrid_re_002 exactly for fair comparison.
+# The ONLY difference is the UNet input: 4ch (noisy only) vs 8ch (degraded+noisy).
+# --------------------------------------------------------------------------
+
+base_config:
+  - config/logging.yaml
+  - config/wandb.yaml
+  - config/dataset_restoration/dataset_train.yaml
+  - config/dataset_restoration/dataset_val.yaml
+  - config/dataset_restoration/dataset_vis.yaml
+  - config/model_sdv2.yaml
+
+wandb:
+  project: RealESGRAN_DiffBIR_Test
+  name: re_004_controlnet_trainable_unet
+
+# Override model path to use HuggingFace directly
+model:
+  pretrained_path: stabilityai/stable-diffusion-2
+
+pipeline:
+  name: MarigoldControlNetRestorationPipeline
+  kwargs:
+    default_denoising_steps: 4
+    default_processing_resolution: 768
+
+augmentation:
+  lr_flip_p: 0.5
+
+dataloader:
+  num_workers: 8
+  effective_batch_size: 32
+  max_train_batch_size: 16
+  seed: 2024
+
+trainer:
+  name: MarigoldControlNetTrainableUnetTrainer
+  init_seed: 2024
+  save_period: 5000
+  backup_period: 200000
+  validation_period: 250
+  visualization_period: 100
+  gradient_checkpointing: true
+  save_trainer_state: false
+  checkpoint_strategy:
+    mode: decoupled
+  pixel_loss_crop_size: 128
+
+# Task-specific data keys for restoration
+degraded_rgb_type: degraded_rgb_norm
+clean_rgb_type: clean_rgb_norm
+
+max_epoch: 10000
+max_iter: 30000
+
+# --------------------------------------------------------------------------
+# Loss — matches hybrid_re_002 exactly
+# --------------------------------------------------------------------------
+loss:
+  name: mse_loss
+  kwargs:
+    reduction: mean
+    lpips_weight: 0.12
+    pixel_loss_weight: 0.1
+    pixel_loss_type: l1
+    pixel_loss_max_timestep: 300
+    pixel_loss_max_value: 0.1
+
+# --------------------------------------------------------------------------
+# Differential Learning Rates — matches hybrid_re_002 exactly
+# --------------------------------------------------------------------------
+lr: 1.0e-04          # UNet learning rate
+controlnet_lr: 2.0e-04  # ControlNet learning rate
+
+lr_scheduler:
+  name: IterExponential
+  kwargs:
+    total_iter: 25000
+    final_ratio: 0.01
+    warmup_steps: 200
+
+# ControlNet zero conv initialization — matches hybrid_re_002 (exact zero)
+controlnet_zero_conv_init_scale: 0
+
+# --------------------------------------------------------------------------
+# Offset noise — matches hybrid_re_002
+# --------------------------------------------------------------------------
+offset_noise:
+  strength: 0.1
+
+# --------------------------------------------------------------------------
+# Input noise augmentation — matches hybrid_re_002
+# --------------------------------------------------------------------------
+input_noise_augmentation:
+  probability: 0.3
+  max_strength: 0.05
+
+# --------------------------------------------------------------------------
+# Validation settings — matches hybrid_re_002
+# --------------------------------------------------------------------------
+validation:
+  denoising_steps: 4
+  ensemble_size: 1
+  processing_res: 0
+  match_input_res: false
+  resample_method: bilinear
+  main_val_metric: psnr
+  main_val_metric_goal: maximize
+  init_seed: 2024
+  max_images_to_log: 16
+  log_images_during_validation: true
+  batch_size: 1
+  num_workers: 0
+  pin_memory: false
+  persistent_workers: false
+
+eval:
+  eval_metrics:
+    - psnr
+    - ssim
+    - lpips_alex
+    - delta_e
+    - arniqa_score

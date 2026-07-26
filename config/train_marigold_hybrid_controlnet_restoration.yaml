@@ -1,0 +1,108 @@
+base_config:
+- config/logging.yaml
+- config/wandb.yaml
+- config/dataset_restoration/dataset_train.yaml
+- config/dataset_restoration/dataset_val.yaml
+- config/dataset_restoration/dataset_vis.yaml
+- config/model_sdv2.yaml
+
+wandb:
+  project: marigold-hybrid-controlnet-restoration
+  name: hybrid-02
+
+# Override model path to use HuggingFace directly
+model:
+  pretrained_path: stabilityai/stable-diffusion-2
+
+# Path to pre-trained base restoration checkpoint (8ch UNet)
+# Must contain unet/diffusion_pytorch_model.safetensors
+base_checkpoint_path: "checkpoints/033_best_017000/latest"
+
+pipeline:
+  name: MarigoldHybridControlNetRestorationPipeline
+  kwargs:
+    default_denoising_steps: 4
+    default_processing_resolution: 768
+
+augmentation:
+  lr_flip_p: 0.5
+
+dataloader:
+  num_workers: 8
+  effective_batch_size: 16
+  max_train_batch_size: 16
+  seed: 2024
+
+trainer:
+  name: MarigoldHybridControlNetRestorationTrainer
+  init_seed: 2024
+  save_period: 5000
+  backup_period: 200000
+  validation_period: 250
+  visualization_period: 100
+  gradient_checkpointing: true
+  save_trainer_state: false
+  checkpoint_strategy:
+    mode: decoupled
+  pixel_loss_crop_size: 128  # Crop size in pixels for optional LPIPS loss
+
+# Task-specific data keys for restoration
+degraded_rgb_type: degraded_rgb_norm
+clean_rgb_type: clean_rgb_norm
+
+max_epoch: 10000
+max_iter: 30000
+
+loss:
+  name: mse_loss
+  kwargs:
+    reduction: mean
+    lpips_weight: 0.05  # Set > 0 to enable pixel-space LPIPS (e.g., 0.2)
+
+lr: 5.0e-04
+lr_scheduler:
+  name: IterExponential
+  kwargs:
+    total_iter: 25000
+    final_ratio: 0.01
+    warmup_steps: 500
+
+# Initialize ControlNet zero convolutions with small random weights instead of exact zero.
+# This breaks the gradient bottleneck that prevents the ControlNet from learning when
+# the frozen UNet already produces decent output.
+# Set to 0.0 or remove to keep default exact-zero initialization.
+controlnet_zero_conv_init_scale: 1.0e-03
+
+# Offset noise for preventing latent drift
+offset_noise:
+  strength: 0.1
+
+# Input noise augmentation (pixel space for ControlNet conditioning)
+input_noise_augmentation:
+  probability: 0.3
+  max_strength: 0.05
+
+# Validation settings
+validation:
+  denoising_steps: 4
+  ensemble_size: 1
+  processing_res: 0
+  match_input_res: false
+  resample_method: bilinear
+  main_val_metric: psnr
+  main_val_metric_goal: maximize
+  init_seed: 2024
+  max_images_to_log: 16
+  log_images_during_validation: true
+  batch_size: 1
+  num_workers: 8
+  pin_memory: true
+  persistent_workers: true
+
+eval:
+  eval_metrics:
+  - psnr
+  - ssim
+  - lpips_alex
+  - delta_e
+  - arniqa_score
