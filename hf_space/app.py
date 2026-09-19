@@ -25,6 +25,9 @@ from marigold import MarigoldHybridControlNetArniqa003PipelinePatched
 
 logging.basicConfig(level=logging.INFO)
 
+_HERE = os.path.dirname(os.path.abspath(__file__))
+_EXAMPLES_DIR = os.path.join(_HERE, "examples")
+
 MODEL_REPO = "ccalzerano72/IRis-hybrid-003"
 SD2_MODEL = "sd2-community/stable-diffusion-2-1"
 DTYPE = torch.float16
@@ -135,6 +138,15 @@ for details, metrics and the thesis results.
     with gr.Row():
         with gr.Column():
             input_img = gr.Image(type="numpy", label="Degraded input", sources=["upload", "clipboard"])
+            gr.Examples(
+                examples=[
+                    [os.path.join(_EXAMPLES_DIR, "degraded_urban100_011.jpg")],
+                    [os.path.join(_EXAMPLES_DIR, "degraded_urban100_062.jpg")],
+                    [os.path.join(_EXAMPLES_DIR, "degraded_div2k_0801.jpg")],
+                ],
+                inputs=[input_img],
+                label="Try an example (Urban100 / DIV2K, Medium degradation)",
+            )
             steps = gr.Slider(1, 50, value=5, step=1, label="Denoising steps")
             seed = gr.Number(value=-1, label="Seed (-1 = random)", precision=0)
             run_btn = gr.Button("Restore", variant="primary")
@@ -154,6 +166,12 @@ for details, metrics and the thesis results.
 - **Free daily GPU quota** applies per user (5 minutes). Fewer denoising steps
   are faster and cheaper; 5 steps already give strong results.
 - Trained on 768×768 patches; the output is resized back to the input size.
+- Compare with other engines and metrics on the
+  [IRis-compare Space](https://huggingface.co/spaces/ccalzerano72/IRis-compare).
+- Test data: example images from [Urban100](https://github.com/jbhuang0604/SelfExSR)
+  ([HF mirror](https://huggingface.co/datasets/eugenesiow/Urban100), CC-BY-4.0) and
+  [DIV2K](https://data.vision.ee.ethz.ch/cvl/DIV2K/)
+  ([HF mirror](https://huggingface.co/datasets/eugenesiow/Div2k)).
         """
     )
 

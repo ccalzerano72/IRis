@@ -36,3 +36,18 @@ The app runs on **ZeroGPU** shared hardware. The model is streamed to the GPU on
 
 - Model weights repo: [ccalzerano72/IRis-hybrid-003](https://huggingface.co/ccalzerano72/IRis-hybrid-003)
 - Project repository: [github.com/ccalzerano72/IRis](https://github.com/ccalzerano72/IRis)
+- Comparison demo: [ccalzerano72/IRis-compare](https://huggingface.co/spaces/ccalzerano72/IRis-compare)
+
+## Test data
+
+One-click examples in the app (pre-degraded with the Medium preset) come from
+standard super-resolution benchmarks:
+
+- **Urban100** (Huang et al., CVPR 2015) — official source:
+  [jbhuang0604/SelfExSR](https://github.com/jbhuang0604/SelfExSR);
+  HF mirror: [eugenesiow/Urban100](https://huggingface.co/datasets/eugenesiow/Urban100)
+  (images under CC-BY-4.0, attribution: Huang, Singh & Ahuja, 2015).
+- **DIV2K valid** (Agustsson et al., NTIRE 2017) — official source:
+  [data.vision.ee.ethz.ch/cvl/DIV2K](https://data.vision.ee.ethz.ch/cvl/DIV2K/);
+  HF mirror: [eugenesiow/Div2k](https://huggingface.co/datasets/eugenesiow/Div2k)
+  (research use; please cite the NTIRE 2017 challenge paper).

@@ -72,6 +72,13 @@ Side-by-side qualitative results are available in:
 - [Thesis](thesis/thesis.pdf) — Chapter 5 for the full quantitative analysis; Appendix C ("Additional Visual Comparisons") for per-image panels showing clean ground truth, degraded input, Restormer, RealESRGAN, DiffBIR, and IRis with 4× magnified crops and per-image metrics
 - [Presentation slides](thesis/slides.pdf) — slide 12 ("Visual Comparison": degraded input, Restormer, DiffBIR, and IRis on the same crop, including a case where DiffBIR hallucinates incorrect texture)
 
+### Test data
+
+The live demos ship one-click examples from standard super-resolution benchmarks:
+
+- **Urban100** (Huang et al., CVPR 2015) — official source: [jbhuang0604/SelfExSR](https://github.com/jbhuang0604/SelfExSR); HF mirror: [eugenesiow/Urban100](https://huggingface.co/datasets/eugenesiow/Urban100) (images under CC-BY-4.0).
+- **DIV2K valid** (Agustsson et al., NTIRE 2017) — official source: [data.vision.ee.ethz.ch/cvl/DIV2K](https://data.vision.ee.ethz.ch/cvl/DIV2K/); HF mirror: [eugenesiow/Div2k](https://huggingface.co/datasets/eugenesiow/Div2k) (research use).
+
 ## Installation
 
 ```bash

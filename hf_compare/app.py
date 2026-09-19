@@ -22,6 +22,9 @@ from metrics import LightMetrics, style_best
 
 logging.basicConfig(level=logging.INFO)
 
+_HERE = os.path.dirname(os.path.abspath(__file__))
+_EXAMPLES_DIR = os.path.join(_HERE, "examples")
+
 # ---------------------------------------------------------------------------
 # Module-scope model loading (ZeroGPU "pack" pattern).
 # ---------------------------------------------------------------------------
@@ -210,6 +213,15 @@ degradations against Real-ESRGAN, Restormer, DiffBIR and HyPIR.
             with gr.Row():
                 with gr.Column():
                     clean_in = gr.Image(type="numpy", label="Clean image", sources=["upload", "clipboard"])
+                    gr.Examples(
+                        examples=[
+                            [os.path.join(_EXAMPLES_DIR, "clean_urban100_011.jpg")],
+                            [os.path.join(_EXAMPLES_DIR, "clean_urban100_062.jpg")],
+                            [os.path.join(_EXAMPLES_DIR, "clean_div2k_0801.jpg")],
+                        ],
+                        inputs=[clean_in],
+                        label="Try an example (Urban100 / DIV2K)",
+                    )
                     mode = gr.Radio(
                         ["Default (presets)", "Advanced (thesis pipeline)"],
                         value="Default (presets)",
@@ -328,6 +340,10 @@ degradations against Real-ESRGAN, Restormer, DiffBIR and HyPIR.
 - About IRis: [single-image demo](https://huggingface.co/spaces/ccalzerano72/IRis) ·
   [GitHub repository](https://github.com/ccalzerano72/IRis) ·
   [model weights](https://huggingface.co/ccalzerano72/IRis-hybrid-003)
+- Test data: example images from [Urban100](https://github.com/jbhuang0604/SelfExSR)
+  ([HF mirror](https://huggingface.co/datasets/eugenesiow/Urban100), CC-BY-4.0) and
+  [DIV2K](https://data.vision.ee.ethz.ch/cvl/DIV2K/)
+  ([HF mirror](https://huggingface.co/datasets/eugenesiow/Div2k)).
         """
     )
 
