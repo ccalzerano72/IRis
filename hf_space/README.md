@@ -38,6 +38,12 @@ The app runs on **ZeroGPU** shared hardware. The model is streamed to the GPU on
 - Project repository: [github.com/ccalzerano72/IRis](https://github.com/ccalzerano72/IRis)
 - Comparison demo: [ccalzerano72/IRis-compare](https://huggingface.co/spaces/ccalzerano72/IRis-compare)
 
+## License
+
+Model weights: OpenRAIL++-M (see `LICENSE` in the
+[model repository](https://huggingface.co/ccalzerano72/IRis-hybrid-003)),
+including the use restrictions in Attachment A. App code: Apache-2.0.
+
 ## Test data
 
 One-click examples in the app (pre-degraded with the Medium preset) come from

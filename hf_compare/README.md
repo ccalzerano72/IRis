@@ -58,6 +58,12 @@ in this repository; IRis and Restormer weights are preloaded from the Hub.
 - Restormer weights: [deepinv/Restormer](https://huggingface.co/deepinv/Restormer)
 - Project repository: [github.com/ccalzerano72/IRis](https://github.com/ccalzerano72/IRis)
 
+## License
+
+IRis model weights: OpenRAIL++-M (see `LICENSE` in the
+[model repository](https://huggingface.co/ccalzerano72/IRis-hybrid-003)),
+including the use restrictions in Attachment A. App code: Apache-2.0.
+
 ## Test data
 
 One-click examples in the app come from standard super-resolution benchmarks
