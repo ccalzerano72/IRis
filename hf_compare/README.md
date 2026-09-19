@@ -33,6 +33,23 @@ restore it with **IRis**, **Restormer** (Real_Denoising) and **Real-ESRGAN**
 no-reference (NIQE/MUSIQ) metrics — the same protocol as Chapter 5 of the
 [IRis thesis](https://github.com/ccalzerano72/IRis).
 
+## About IRis
+
+**IRis** (Image Restoration via latent diffusion) is a Master's thesis project
+(University of Pisa, by Carmelo Calzerano) that repurposes Stable Diffusion 2
+for blind image restoration via a dual-conditioned latent diffusion
+architecture: an 8-channel UNet conditioned on the degraded image in latent
+space plus a ControlNet branch providing pixel-space structural guidance,
+trained jointly on synthetic degradations. It ranks 1st on all metrics
+(PSNR/SSIM/ΔE/LPIPS) on both synthetic (DIV2K) and real-world (RealSR)
+degradations against Real-ESRGAN, Restormer, DiffBIR and HyPIR.
+
+- 🖼️ Single-image demo: [ccalzerano72/IRis](https://huggingface.co/spaces/ccalzerano72/IRis)
+- 💻 Project repository: [github.com/ccalzerano72/IRis](https://github.com/ccalzerano72/IRis)
+- ⚖️ Model weights: [ccalzerano72/IRis-hybrid-003](https://huggingface.co/ccalzerano72/IRis-hybrid-003)
+
+## How this Space works
+
 All engines run locally in this Space (IRis and Restormer on GPU, Real-ESRGAN
 on CPU). The Real-ESRGAN weights (`weights/RealESRGAN_x4plus.pth`) are bundled
 in this repository; IRis and Restormer weights are preloaded from the Hub.

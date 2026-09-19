@@ -138,7 +138,15 @@ tar xf 7z2602-linux-x64.tar.xz
 
 ## Quick Start: Inference
 
-Prefer no-code? Use the hosted demos on [Hugging Face Spaces](https://huggingface.co/spaces/ccalzerano72/IRis) (single-image restoration) or [IRis-compare](https://huggingface.co/spaces/ccalzerano72/IRis-compare) (degrade → restore with IRis/Restormer/Real-ESRGAN → metrics).
+### Live demos (no installation)
+
+- **[ccalzerano72/IRis](https://huggingface.co/spaces/ccalzerano72/IRis)** — single-image restoration demo: upload a degraded image and get the restored output.
+- **[ccalzerano72/IRis-compare](https://huggingface.co/spaces/ccalzerano72/IRis-compare)** — comparison demo following the thesis evaluation protocol (Chapter 5):
+  1. **Degrade** a clean image (presets or thesis-style two-stage blur → resize → noise → JPEG pipeline);
+  2. **Compare** restorations from **IRis**, **Restormer** (Real_Denoising) and **Real-ESRGAN** (x4plus, outscale 1), all running locally in the Space;
+  3. **Metrics** — full-reference (PSNR/SSIM/LPIPS) and no-reference (NIQE/MUSIQ) scores in a table with per-metric best highlighting and CSV export.
+
+### Local inference
 
 To run inference locally, a convenience wrapper script is provided for simple use:
 

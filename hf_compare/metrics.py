@@ -8,10 +8,35 @@
 import logging
 
 import numpy as np
+import pandas as pd
 import torch
 from PIL import Image
 
 logger = logging.getLogger(__name__)
+
+HIGHER_BETTER = {"PSNR ↑", "SSIM ↑", "MUSIQ ↑"}
+LOWER_BETTER = {"LPIPS ↓", "NIQE ↓"}
+BEST_BG = "#cfe8cf"  # light green
+
+
+def style_best(df: pd.DataFrame):
+    """Highlight the best value of each metric column (green, bold).
+
+    Respects metric direction (↑ higher-better, ↓ lower-better) and
+    ignores missing (None/NaN) values.
+    """
+
+    def _highlight(col):
+        vals = pd.to_numeric(col, errors="coerce")
+        if vals.isna().all():
+            return [""] * len(col)
+        best_idx = vals.idxmax() if col.name in HIGHER_BETTER else vals.idxmin()
+        return [
+            f"background-color: {BEST_BG}; font-weight: bold" if i == best_idx else ""
+            for i in col.index
+        ]
+
+    return df.style.apply(_highlight, axis=0)
 
 
 def _to_array(img: Image.Image) -> np.ndarray:
