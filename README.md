@@ -1,5 +1,7 @@
 # IRis: Image Restoration via Latent Diffusion
 
+🚀 **Try it live**: [ccalzerano72/IRis on Hugging Face Spaces](https://huggingface.co/spaces/ccalzerano72/IRis) — a hosted ZeroGPU demo, no installation required. The trained weights are hosted at [ccalzerano72/IRis-hybrid-003](https://huggingface.co/ccalzerano72/IRis-hybrid-003).
+
 This repository contains the implementation for the Master's thesis **"Blind Image Restoration via Dual-Conditioned Latent Diffusion"**.
 
 The project extends the [Marigold](https://github.com/prs-eth/Marigold) framework to support blind image restoration, demonstrating how diffusion models pretrained for image generation can be repurposed for image enhancement tasks.
@@ -94,7 +96,14 @@ pip install -r requirements++.txt -r requirements+.txt -r requirements.txt
 
 ## Checkpoint Download
 
-Download the pretrained checkpoint (~5GB) from the [v1.0.0 release](https://github.com/ccalzerano72/IRis/releases/tag/v1.0.0):
+The pretrained checkpoint (~5GB) is hosted on Hugging Face at [ccalzerano72/IRis-hybrid-003](https://huggingface.co/ccalzerano72/IRis-hybrid-003). Download it with:
+
+```bash
+pip install "huggingface_hub[cli]"
+huggingface-cli download ccalzerano72/IRis-hybrid-003 --local-dir checkpoints/002_re_015000
+```
+
+Alternatively, download the same checkpoint from the [v1.0.0 GitHub release](https://github.com/ccalzerano72/IRis/releases/tag/v1.0.0):
 
 ```bash
 # Download all 5 parts
@@ -129,7 +138,9 @@ tar xf 7z2602-linux-x64.tar.xz
 
 ## Quick Start: Inference
 
-A convenience wrapper script is provided for simple use:
+Prefer no-code? Use the hosted demo on [Hugging Face Spaces](https://huggingface.co/spaces/ccalzerano72/IRis).
+
+To run inference locally, a convenience wrapper script is provided for simple use:
 
 ```bash
 chmod +x infer.sh
