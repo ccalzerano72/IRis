@@ -2,6 +2,7 @@
 # ignore these folders
 /checkpoint
 /checkpoints
+/hf_compare/weights
 /data
 /input
 /output

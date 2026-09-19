@@ -1,6 +1,6 @@
 # IRis: Image Restoration via Latent Diffusion
 
-🚀 **Try it live**: [ccalzerano72/IRis on Hugging Face Spaces](https://huggingface.co/spaces/ccalzerano72/IRis) — a hosted ZeroGPU demo, no installation required. The trained weights are hosted at [ccalzerano72/IRis-hybrid-003](https://huggingface.co/ccalzerano72/IRis-hybrid-003).
+🚀 **Try it live**: [ccalzerano72/IRis on Hugging Face Spaces](https://huggingface.co/spaces/ccalzerano72/IRis) (single-image demo) and [ccalzerano72/IRis-compare](https://huggingface.co/spaces/ccalzerano72/IRis-compare) (degrade a clean image, restore it with IRis/Restormer/Real-ESRGAN and compare PSNR/SSIM/LPIPS/NIQE/MUSIQ) — hosted ZeroGPU demos, no installation required. The trained weights are hosted at [ccalzerano72/IRis-hybrid-003](https://huggingface.co/ccalzerano72/IRis-hybrid-003).
 
 This repository contains the implementation for the Master's thesis **"Blind Image Restoration via Dual-Conditioned Latent Diffusion"**.
 
@@ -138,7 +138,7 @@ tar xf 7z2602-linux-x64.tar.xz
 
 ## Quick Start: Inference
 
-Prefer no-code? Use the hosted demo on [Hugging Face Spaces](https://huggingface.co/spaces/ccalzerano72/IRis).
+Prefer no-code? Use the hosted demos on [Hugging Face Spaces](https://huggingface.co/spaces/ccalzerano72/IRis) (single-image restoration) or [IRis-compare](https://huggingface.co/spaces/ccalzerano72/IRis-compare) (degrade → restore with IRis/Restormer/Real-ESRGAN → metrics).
 
 To run inference locally, a convenience wrapper script is provided for simple use:
 
